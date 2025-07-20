@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brain Boost Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .pulse-animation {
+            animation: pulse 1.5s infinite;
+        }
+        .flip-card {
+            perspective: 1000px;
+        }
+        .flip-card-inner {
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+        .flip-card-front, .flip-card-back {
+            backface-visibility: hidden;
+        }
+        .flip-card-back {
+            transform: rotateY(180deg);
+        }
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-900 to-purple-800 min-h-screen text-white font-sans">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-yellow-300 to-pink-400">
+                Brain Boost Challenge
+            </h1>
+            <p class="text-lg text-indigo-200 max-w-2xl mx-auto">
+                Test your memory, speed, and calculation skills with these brain exercises!
+            </p>
+        </header>
+
+        <!-- Game Selection -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer hover:bg-white/15 border border-white/10"
+                 onclick="startGame('memory')">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-brain text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Memory Match</h3>
+                    <p class="text-indigo-200">Test your short-term memory by matching pairs of cards</p>
+                </div>
+            </div>
+            
+            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer hover:bg-white/15 border border-white/10"
+                 onclick="startGame('math')">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-calculator text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Math Sprint</h3>
+                    <p class="text-indigo-200">Solve as many math problems as you can in 30 seconds</p>
+                </div>
+            </div>
+            
+            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer hover:bg-white/15 border border-white/10"
+                 onclick="startGame('reaction')">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-bolt text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Reaction Test</h3>
+                    <p class="text-indigo-200">Measure your reaction time to visual stimuli</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Area -->
+        <div id="game-area" class="bg-white/5 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-white/10 min-h-96 hidden">
+            <!-- Memory Game -->
+            <div id="memory-game" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">Memory Match</h2>
+                    <div class="flex items-center space-x-4">
+                        <span class="px-4 py-2 bg-indigo-700 rounded-lg">Moves: <span id="memory-moves">0</span></span>
+                        <span class="px-4 py-2 bg-indigo-700 rounded-lg">Pairs: <span id="memory-pairs">0</span>/8</span>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="memory-board">
+                    <!-- Cards will be generated here -->
+                </div>
+                
+                <div class="mt-8 text-center">
+                    <button onclick="resetMemoryGame()" class="px-6 py-3 bg-pink-600 hover:bg-pink-700 rounded-lg font-medium transition-colors">
+                        <i class="fas fa-redo mr-2"></i> Restart Game
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Math Game -->
+            <div id="math-game" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">Math Sprint</h2>
+                    <div class="flex items-center space-x-4">
+                        <div class="relative w-12 h-12">
+                            <svg class="w-full h-full" viewBox="0 0 36 36">
+                                <path
+                                    d="M18 2.0845
+                                    a 15.9155 15.9155 0 0 1 0 31.831
+                                    a 15.9155 15.9155 0 0 1 0 -31.831"
+                                    fill="none"
+                                    stroke="#4a5568"
+                                    stroke-width="2"
+                                    stroke-dasharray="100, 100"
+                                />
+                                <path
+                                    id="math-progress"
+                                    d="M18 2.0845
+                                    a 15.9155 15.9155 0 0 1 0 31.831
+                                    a 15.9155 15.9155 0 0 1 0 -31.831"
+                                    fill="none"
+                                    stroke="#ec4899"
+                                    stroke-width="2"
+                                    stroke-dasharray="100, 100"
+                                />
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center text-sm font-medium">
+                                <span id="math-timer">30</span>
+                            </div>
+                        </div>
+                        <span class="px-4 py-2 bg-indigo-700 rounded-lg">Score: <span id="math-score">0</span></span>
+                    </div>
+                </div>
+                
+                <div class="text-center mb-8">
+                    <div class="text-5xl font-bold mb-6" id="math-problem">5 + 7 = ?</div>
+                    <div class="flex justify-center space-x-4">
+                        <input type="number" id="math-answer" class="w-32 px-4 py-2 text-center text-2xl bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500" autofocus>
+                        <button onclick="checkMathAnswer()" class="px-6 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-medium transition-colors">
+                            Submit
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="mt-8 text-center">
+                    <button onclick="resetMathGame()" class="px-6 py-3 bg-pink-600 hover:bg-pink-700 rounded-lg font-medium transition-colors">
+                        <i class="fas fa-redo mr-2"></i> Restart Game
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Reaction Game -->
+            <div id="reaction-game" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">Reaction Test</h2>
+                    <div class="flex items-center space-x-4">
+                        <span class="px-4 py-2 bg-indigo-700 rounded-lg">Average: <span id="reaction-avg">0</span>ms</span>
+                        <span class="px-4 py-2 bg-indigo-700 rounded-lg">Best: <span id="reaction-best">0</span>ms</span>
+                    </div>
+                </div>
+                
+                <div class="text-center">
+                    <div class="mb-8">
+                        <p class="text-lg text-indigo-200 mb-4">Click when the box turns green</p>
+                        <div id="reaction-box" class="w-64 h-64 bg-indigo-800 rounded-xl mx-auto flex items-center justify-center cursor-pointer transition-colors duration-300" onclick="reactionClick()">
+                            <span id="reaction-text" class="text-xl font-medium">Wait for it...</span>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        <div class="bg-white/10 p-4 rounded-lg">
+                            <div class="text-sm text-indigo-300 mb-1">Last Reaction</div>
+                            <div class="text-2xl font-bold" id="reaction-last">0 ms</div>
+                        </div>
+                        <div class="bg-white/10 p-4 rounded-lg">
+                            <div class="text-sm text-indigo-300 mb-1">Attempts</div>
+                            <div class="text-2xl font-bold" id="reaction-attempts">0</div>
+                        </div>
+                        <div class="bg-white/10 p-4 rounded-lg">
+                            <div class="text-sm text-indigo-300 mb-1">Fastest</div>
+                            <div class="text-2xl font-bold" id="reaction-fastest">0 ms</div>
+                        </div>
+                    </div>
+                    
+                    <button onclick="startReactionTest()" class="px-6 py-3 bg-pink-600 hover:bg-pink-700 rounded-lg font-medium transition-colors">
+                        <i class="fas fa-play mr-2"></i> Start Test
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results Modal -->
+        <div id="results-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+            <div class="bg-gradient-to-br from-purple-800 to-indigo-900 rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl border border-white/10">
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-trophy text-3xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-2" id="result-title">Game Completed!</h3>
+                    <p class="text-indigo-200 mb-6" id="result-message">You did great!</p>
+                    
+                    <div class="bg-white/10 rounded-lg p-4 mb-6">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <div class="text-sm text-indigo-300">Score</div>
+                                <div class="text-xl font-bold" id="result-score">0</div>
+                            </div>
+                            <div>
+                                <div class="text-sm text-indigo-300">Time</div>
+                                <div class="text-xl font-bold" id="result-time">0s</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button onclick="closeResults()" class="px-6 py-3 bg-pink-600 hover:bg-pink-700 rounded-lg font-medium transition-colors w-full">
+                        Play Again
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game state variables
+        let currentGame = null;
+        let memoryCards = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let moves = 0;
+        
+        let mathScore = 0;
+        let mathTimer = 30;
+        let mathInterval;
+        let currentProblem = {};
+        
+        let reactionStartTime = 0;
+        let reactionTimes = [];
+        let reactionTestActive = false;
+        let reactionTimeout;
+        
+        // Game selection
+        function startGame(gameType) {
+            currentGame = gameType;
+            document.getElementById('game-area').classList.remove('hidden');
+            
+            // Hide all games first
+            document.getElementById('memory-game').classList.add('hidden');
+            document.getElementById('math-game').classList.add('hidden');
+            document.getElementById('reaction-game').classList.add('hidden');
+            
+            // Show selected game
+            if (gameType === 'memory') {
+                document.getElementById('memory-game').classList.remove('hidden');
+                initMemoryGame();
+            } else if (gameType === 'math') {
+                document.getElementById('math-game').classList.remove('hidden');
+                initMathGame();
+            } else if (gameType === 'reaction') {
+                document.getElementById('reaction-game').classList.remove('hidden');
+                resetReactionGame();
+            }
+            
+            // Scroll to game area
+            document.getElementById('game-area').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Memory Game Functions
+        function initMemoryGame() {
+            // Reset game state
+            memoryCards = [];
+            flippedCards = [];
+            matchedPairs = 0;
+            moves = 0;
+            
+            document.getElementById('memory-moves').textContent = moves;
+            document.getElementById('memory-pairs').textContent = matchedPairs;
+            
+            // Create pairs of cards
+            const symbols = ['🍎', '🍌', '🍒', '🍓', '🍊', '🍋', '🍐', '🍉'];
+            const cards = [...symbols, ...symbols];
+            
+            // Shuffle cards
+            for (let i = cards.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cards[i], cards[j]] = [cards[j], cards[i]];
+            }
+            
+            // Generate card elements
+            const board = document.getElementById('memory-board');
+            board.innerHTML = '';
+            
+            cards.forEach((symbol, index) => {
+                const card = document.createElement('div');
+                card.className = 'flip-card h-24 sm:h-32 cursor-pointer';
+                card.dataset.index = index;
+                card.dataset.symbol = symbol;
+                card.onclick = () => flipCard(card);
+                
+                card.innerHTML = `
+                    <div class="flip-card-inner w-full h-full">
+                        <div class="flip-card-front bg-indigo-700 rounded-lg flex items-center justify-center text-4xl">
+                            <i class="fas fa-question text-white/70"></i>
+                        </div>
+                        <div class="flip-card-back bg-gradient-to-br from-pink-500 to-yellow-500 rounded-lg flex items-center justify-center text-4xl">
+                            ${symbol}
+                        </div>
+                    </div>
+                `;
+                
+                board.appendChild(card);
+                memoryCards.push({
+                    element: card,
+                    symbol: symbol,
+                    flipped: false,
+                    matched: false
+                });
+            });
+        }
+        
+        function flipCard(cardElement) {
+            const index = parseInt(cardElement.dataset.index);
+            const card = memoryCards[index];
+            
+            // Don't allow flipping if already flipped or matched
+            if (card.flipped || card.matched || flippedCards.length >= 2) {
+                return;
+            }
+            
+            // Flip the card
+            cardElement.classList.add('flipped');
+            card.flipped = true;
+            flippedCards.push(card);
+            
+            // Check for match when two cards are flipped
+            if (flippedCards.length === 2) {
+                moves++;
+                document.getElementById('memory-moves').textContent = moves;
+                
+                if (flippedCards[0].symbol === flippedCards[1].symbol) {
+                    // Match found
+                    flippedCards.forEach(c => {
+                        c.matched = true;
+                        c.element.classList.add('opacity-70');
+                    });
+                    matchedPairs++;
+                    document.getElementById('memory-pairs').textContent = matchedPairs;
+                    flippedCards = [];
+                    
+                    // Check if game is complete
+                    if (matchedPairs === 8) {
+                        setTimeout(() => {
+                            showResults('Memory Match', `You completed the game in ${moves} moves!`, moves, null);
+                        }, 500);
+                    }
+                } else {
+                    // No match - flip back after delay
+                    setTimeout(() => {
+                        flippedCards.forEach(c => {
+                            c.element.classList.remove('flipped');
+                            c.flipped = false;
+                        });
+                        flippedCards = [];
+                    }, 1000);
+                }
+            }
+        }
+        
+        function resetMemoryGame() {
+            initMemoryGame();
+        }
+        
+        // Math Game Functions
+        function initMathGame() {
+            mathScore = 0;
+            mathTimer = 30;
+            document.getElementById('math-score').textContent = mathScore;
+            document.getElementById('math-timer').textContent = mathTimer;
+            
+            // Start timer
+            clearInterval(mathInterval);
+            mathInterval = setInterval(updateMathTimer, 1000);
+            
+            // Generate first problem
+            generateMathProblem();
+            
+            // Focus on input
+            document.getElementById('math-answer').focus();
+        }
+        
+        function updateMathTimer() {
+            mathTimer--;
+            document.getElementById('math-timer').textContent = mathTimer;
+            
+            // Update progress ring
+            const progress = (mathTimer / 30) * 100;
+            document.getElementById('math-progress').style.strokeDashoffset = 100 - progress;
+            
+            if (mathTimer <= 0) {
+                clearInterval(mathInterval);
+                showResults('Math Sprint', `Time's up! Your score: ${mathScore}`, mathScore, 30);
+            }
+        }
+        
+        function generateMathProblem() {
+            const operations = ['+', '-', '*'];
+            const operation = operations[Math.floor(Math.random() * operations.length)];
+            let a, b;
+            
+            if (operation === '+') {
+                a = Math.floor(Math.random() * 20) + 1;
+                b = Math.floor(Math.random() * 20) + 1;
+            } else if (operation === '-') {
+                a = Math.floor(Math.random() * 20) + 10;
+                b = Math.floor(Math.random() * 10) + 1;
+            } else {
+                a = Math.floor(Math.random() * 10) + 1;
+                b = Math.floor(Math.random() * 10) + 1;
+            }
+            
+            let answer;
+            switch (operation) {
+                case '+': answer = a + b; break;
+                case '-': answer = a - b; break;
+                case '*': answer = a * b; break;
+            }
+            
+            currentProblem = { a, b, operation, answer };
+            document.getElementById('math-problem').textContent = `${a} ${operation} ${b} = ?`;
+            document.getElementById('math-answer').value = '';
+        }
+        
+        function checkMathAnswer() {
+            const userAnswer = parseInt(document.getElementById('math-answer').value);
+            
+            if (isNaN(userAnswer)) {
+                return;
+            }
+            
+            if (userAnswer === currentProblem.answer) {
+                mathScore += 5;
+                document.getElementById('math-score').textContent = mathScore;
+                
+                // Show correct feedback
+                const problemElement = document.getElementById('math-problem');
+                problemElement.textContent = 'Correct!';
+                problemElement.classList.add('text-green-400');
+                
+                setTimeout(() => {
+                    problemElement.classList.remove('text-green-400');
+                    generateMathProblem();
+                }, 500);
+            } else {
+                // Show incorrect feedback
+                const problemElement = document.getElementById('math-problem');
+                problemElement.textContent = `Incorrect! ${currentProblem.a} ${currentProblem.operation} ${currentProblem.b} = ${currentProblem.answer}`;
+                problemElement.classList.add('text-red-400');
+                
+                setTimeout(() => {
+                    problemElement.classList.remove('text-red-400');
+                    generateMathProblem();
+                }, 1500);
+            }
+            
+            document.getElementById('math-answer').focus();
+        }
+        
+        function resetMathGame() {
+            initMathGame();
+        }
+        
+        // Reaction Game Functions
+        function resetReactionGame() {
+            reactionTimes = [];
+            document.getElementById('reaction-last').textContent = '0 ms';
+            document.getElementById('reaction-attempts').textContent = '0';
+            document.getElementById('reaction-fastest').textContent = '0 ms';
+            document.getElementById('reaction-avg').textContent = '0';
+            document.getElementById('reaction-best').textContent = '0';
+            
+            const box = document.getElementById('reaction-box');
+            box.style.backgroundColor = '#1e1b4b'; // indigo-900
+            box.classList.remove('bg-green-500');
+            document.getElementById('reaction-text').textContent = 'Wait for it...';
+            
+            clearTimeout(reactionTimeout);
+            reactionTestActive = false;
+        }
+        
+        function startReactionTest() {
+            if (reactionTestActive) return;
+            
+            const box = document.getElementById('reaction-box');
+            box.style.backgroundColor = '#1e1b4b'; // indigo-900
+            document.getElementById('reaction-text').textContent = 'Wait for it...';
+            
+            // Random delay between 1-5 seconds
+            const delay = Math.random() * 4000 + 1000;
+            
+            reactionTestActive = true;
+            reactionTimeout = setTimeout(() => {
+                if (!reactionTestActive) return;
+                
+                box.style.backgroundColor = '#22c55e'; // green-500
+                document.getElementById('reaction-text').textContent = 'Click Now!';
+                reactionStartTime = new Date().getTime();
+            }, delay);
+        }
+        
+        function reactionClick() {
+            if (!reactionTestActive || reactionStartTime === 0) {
+                // Clicked too early
+                const box = document.getElementById('reaction-box');
+                box.style.backgroundColor = '#ef4444'; // red-500
+                document.getElementById('reaction-text').textContent = 'Too Soon!';
+                
+                reactionTestActive = false;
+                clearTimeout(reactionTimeout);
+                
+                setTimeout(() => {
+                    startReactionTest();
+                }, 2000);
+                return;
+            }
+            
+            const reactionTime = new Date().getTime() - reactionStartTime;
+            reactionTimes.push(reactionTime);
+            
+            // Update stats
+            document.getElementById('reaction-last').textContent = `${reactionTime} ms`;
+            document.getElementById('reaction-attempts').textContent = reactionTimes.length;
+            
+            const fastest = Math.min(...reactionTimes);
+            document.getElementById('reaction-fastest').textContent = `${fastest} ms`;
+            
+            const average = Math.round(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length);
+            document.getElementById('reaction-avg').textContent = average;
+            document.getElementById('reaction-best').textContent = fastest;
+            
+            // Visual feedback
+            const box = document.getElementById('reaction-box');
+            box.style.backgroundColor = '#3b82f6'; // blue-500
+            document.getElementById('reaction-text').textContent = `${reactionTime} ms`;
+            
+            reactionTestActive = false;
+            reactionStartTime = 0;
+            
+            // Start next test after delay
+            setTimeout(() => {
+                startReactionTest();
+            }, 2000);
+        }
+        
+        // Results Modal
+        function showResults(title, message, score, time) {
+            document.getElementById('result-title').textContent = title;
+            document.getElementById('result-message').textContent = message;
+            document.getElementById('result-score').textContent = score;
+            document.getElementById('result-time').textContent = time ? `${time}s` : 'N/A';
+            
+            document.getElementById('results-modal').classList.remove('hidden');
+        }
+        
+        function closeResults() {
+            document.getElementById('results-modal').classList.add('hidden');
+            
+            // Restart current game
+            if (currentGame === 'memory') {
+                resetMemoryGame();
+            } else if (currentGame === 'math') {
+                resetMathGame();
+            } else if (currentGame === 'reaction') {
+                resetReactionGame();
+            }
+        }
+        
+        // Handle math answer submission on Enter key
+        document.getElementById('math-answer').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkMathAnswer();
+            }
+        });
+    </script>
+</body>
+</html>
